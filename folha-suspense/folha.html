@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Folha Suspense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=block" rel="stylesheet">
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  .folha { position: relative; width: 210mm; height: 297mm; overflow: hidden; }
+  .folha > * { position: absolute; inset: 0; }
+  svg { display: block; width: 210mm; height: 297mm; }
+  #grao { background-size: 28mm 28mm; }
+  text { font-family: 'Special Elite', 'Courier New', monospace; }
+</style>
+</head>
+<body>
+<div class="folha">
+  <svg id="fundo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"></svg>
+  <div id="grao"></div>
+  <svg id="folha" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"></svg>
+</div>
+<script>
+(async () => {
+await document.fonts.load('10px "Special Elite"');
+await document.fonts.ready;
+const tema = new URLSearchParams(location.search).get('tema') || 'noite';
+
+const T = {
+  noite: {
+    papel: '#16151b', borda: '#09090c',
+    linha: '#a3a8bd', linhaOp: 0.24,
+    margem: '#a3302e', tinta: '#d9d2c3', tintaSuave: '#8d8778',
+    carimbo: '#c0392f', digital: '#d9d2c3', digitalOp: 0.07,
+    grao: 0.05, cafe: false
+  },
+  dossie: {
+    papel: '#f2e9d6', borda: '#d6c6a3',
+    linha: '#6f7f97', linhaOp: 0.5,
+    margem: '#b23a32', tinta: '#2c2724', tintaSuave: '#7a6f60',
+    carimbo: '#b8312b', digital: '#3a2f26', digitalOp: 0.08,
+    grao: 0.09, cafe: true
+  }
+}[tema];
+
+// gerador aleatório com semente fixa (sempre o mesmo desenho)
+let s = 7;
+const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+const svg = [];
+const L = 12, R = 198;
+
+// ---------- defs ----------
+svg.push(`<defs>
+  <radialGradient id="vinheta" cx="50%" cy="45%" r="75%">
+    <stop offset="55%" stop-color="${T.papel}"/>
+    <stop offset="100%" stop-color="${T.borda}"/>
+  </radialGradient>
+  <filter id="gasto" x="-10%" y="-30%" width="120%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="r"/>
+    <feDisplacementMap in="SourceGraphic" in2="r" scale="0.9"/>
+  </filter>
+  <radialGradient id="someDigital">
+    <stop offset="60%" stop-color="#fff" stop-opacity="1"/>
+    <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <mask id="mascaraDigital"><circle cx="0" cy="0" r="24" fill="url(#someDigital)"/></mask>
+</defs>`);
+
+// ---------- papel ----------
+svg.push(`<rect width="210" height="297" fill="url(#vinheta)"/>`);
+{
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  const ctx = c.getContext('2d'), img = ctx.createImageData(160, 160);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = rnd() < 0.5 ? 0 : 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.floor(rnd() * 255);
+  }
+  ctx.putImageData(img, 0, 0);
+  const g = document.getElementById('grao');
+  g.style.backgroundImage = `url(${c.toDataURL('image/png')})`;
+  g.style.opacity = T.grao;
+}
+
+// ---------- mancha de café (só no dossiê) ----------
+if (T.cafe) {
+  const cx = 197, cy = 66, r = 15;
+  let d = '';
+  for (let a = 0; a <= 360; a += 6) {
+    const rr = r + (rnd() - 0.5) * 0.7, rad = a * Math.PI / 180;
+    d += (a ? 'L' : 'M') + (cx + rr * Math.cos(rad)).toFixed(2) + ',' + (cy + rr * Math.sin(rad)).toFixed(2);
+  }
+  svg.push(`<path d="${d}Z" fill="#8a5a2b" fill-opacity="0.035" stroke="#7a4a1f" stroke-opacity="0.13" stroke-width="0.9"/>`);
+  svg.push(`<path d="${d}Z" fill="none" stroke="#7a4a1f" stroke-opacity="0.08" stroke-width="2.2" stroke-dasharray="30 8 12 20" transform="translate(0.4,0.3)"/>`);
+}
+
+// ---------- digital (marca d'água) ----------
+{
+  const g = [];
+  for (let i = 1; i <= 17; i++) {
+    const rx = 1 + i * 1.25, ry = rx * 1.32;
+    const per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    let dash = [], tot = 0;
+    while (tot < per) { const a = 4 + rnd() * 16, b = 0.5 + rnd() * 1.4; dash.push(a.toFixed(2), b.toFixed(2)); tot += a + b; }
+    g.push(`<ellipse cx="${(rnd() - 0.5) * 0.4}" cy="${i * 0.18}" rx="${rx}" ry="${ry}" fill="none" stroke="${T.digital}" stroke-width="0.42" stroke-dasharray="${dash.join(' ')}" stroke-dashoffset="${(rnd() * 20).toFixed(1)}"/>`);
+  }
+  svg.push(`<g transform="translate(176,244) rotate(-18)" opacity="${T.digitalOp}"><g mask="url(#mascaraDigital)">${g.join('')}</g></g>`);
+}
+
+// ---------- cabeçalho ----------
+let n = 0;
+const campo = (x1, x2, y) => `<line data-apos="r${n}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${T.tinta}" stroke-opacity="0.55" stroke-width="0.25"/>`;
+const rotulo = (x, y, txt, size = 3, cor = T.tintaSuave, ls = 0.5) =>
+  `<text id="r${++n}" x="${x}" y="${y}" font-size="${size}" fill="${cor}" letter-spacing="${ls}">${txt}</text>`;
+
+svg.push(rotulo(L, 15.5, 'ARQUIVO CONFIDENCIAL · CASO Nº', 2.6, T.tintaSuave, 0.6));
+svg.push(campo(0, 100, 15.8));
+
+svg.push(rotulo(L, 27.5, 'CAPÍTULO', 7, T.tinta, 1.2));
+svg.push(campo(54, 136, 27.8));
+
+svg.push(rotulo(L, 37.5, 'CENA', 3, T.tintaSuave, 0.6));
+svg.push(campo(23, 74, 37.8));
+svg.push(rotulo(79, 37.5, 'LOCAL', 3, T.tintaSuave, 0.6));
+svg.push(campo(92, 143, 37.8));
+svg.push(rotulo(148, 37.5, 'DATA', 3, T.tintaSuave, 0.6));
+svg.push(campo(159, 198, 37.8));
+svg.push(`<text x="171" y="37.3" font-size="3.4" fill="${T.tintaSuave}">/</text><text x="184" y="37.3" font-size="3.4" fill="${T.tintaSuave}">/</text>`);
+
+// carimbo
+svg.push(`<g transform="translate(173,21) rotate(-8)" filter="url(#gasto)" opacity="0.82">
+  <rect x="-22" y="-6.6" width="44" height="13.2" rx="1" fill="none" stroke="${T.carimbo}" stroke-width="0.9"/>
+  <rect x="-20.4" y="-5" width="40.8" height="10" rx="0.6" fill="none" stroke="${T.carimbo}" stroke-width="0.35"/>
+  <text x="0" y="1.9" text-anchor="middle" font-size="5.4" fill="${T.carimbo}" textLength="35" lengthAdjust="spacingAndGlyphs">CONFIDENCIAL</text>
+</g>`);
+
+// divisória do cabeçalho
+svg.push(`<line x1="${L}" y1="42.6" x2="${R}" y2="42.6" stroke="${T.tinta}" stroke-opacity="0.7" stroke-width="0.5"/>`);
+svg.push(`<line x1="${L}" y1="43.6" x2="${R}" y2="43.6" stroke="${T.tinta}" stroke-opacity="0.45" stroke-width="0.18"/>`);
+
+// ---------- pauta ----------
+const topo = 52, passo = 8, fim = 276;
+for (let y = topo; y <= fim; y += passo) {
+  svg.push(`<line x1="${L}" y1="${y}" x2="${R}" y2="${y}" stroke="${T.linha}" stroke-opacity="${T.linhaOp}" stroke-width="0.22"/>`);
+}
+
+// margem vermelha (dupla)
+svg.push(`<line x1="34" y1="43.6" x2="34" y2="280" stroke="${T.margem}" stroke-opacity="0.75" stroke-width="0.3"/>`);
+svg.push(`<line x1="35.1" y1="43.6" x2="35.1" y2="280" stroke="${T.margem}" stroke-opacity="0.45" stroke-width="0.15"/>`);
+
+// coluna de pistas
+svg.push(`<text x="23" y="49.3" text-anchor="middle" font-size="2.5" fill="${T.margem}" fill-opacity="0.85" letter-spacing="0.8">PISTAS</text>`);
+
+// frase na lateral
+svg.push(`<text transform="translate(7.6,160) rotate(-90)" text-anchor="middle" font-size="2.7" fill="${T.tintaSuave}" fill-opacity="0.55" letter-spacing="1.6">NÃO CONFIE EM NINGUÉM</text>`);
+
+// ---------- rodapé ----------
+svg.push(`<line x1="${L}" y1="280" x2="${R}" y2="280" stroke="${T.tinta}" stroke-opacity="0.45" stroke-width="0.18"/>`);
+svg.push(rotulo(L, 287.6, 'TENSÃO', 2.8, T.tintaSuave, 0.6));
+const gota = 'M0,-2.6 C1.2,-0.9 1.9,0.3 1.9,1.1 A1.9,1.9 0 1 1 -1.9,1.1 C-1.9,0.3 -1.2,-0.9 0,-2.6 Z';
+for (let i = 0; i < 5; i++) {
+  svg.push(`<path d="${gota}" transform="translate(${31 + i * 5.4},286.2)" fill="none" stroke="${T.margem}" stroke-opacity="0.9" stroke-width="0.32"/>`);
+}
+svg.push(`<rect x="88" y="284.4" width="3.2" height="3.2" rx="0.3" fill="none" stroke="${T.tintaSuave}" stroke-width="0.3"/>`);
+svg.push(rotulo(93.2, 287.4, 'REVIRAVOLTA', 2.8, T.tintaSuave, 0.6));
+svg.push(rotulo(168, 287.6, 'PÁG.', 2.8, T.tintaSuave, 0.6));
+svg.push(campo(178, 198, 287.9));
+
+// divide: fundo (papel, café) e conteúdo
+const idx = svg.findIndex(x => x.startsWith('<g transform="translate(176,244)'));
+document.getElementById('fundo').innerHTML = svg[0] + svg.slice(1, 2).join('') + svg.slice(2, idx).join('');
+document.getElementById('folha').innerHTML = svg[0] + svg.slice(idx).join('\n');
+
+// linhas de preenchimento começam logo depois do rótulo
+document.querySelectorAll('line[data-apos]').forEach(l => {
+  const bb = document.getElementById(l.dataset.apos).getBBox();
+  l.setAttribute('x1', (bb.x + bb.width + 1.8).toFixed(2));
+});
+window.pronto = true;
+})();
+</script>
+</body>
+</html>
