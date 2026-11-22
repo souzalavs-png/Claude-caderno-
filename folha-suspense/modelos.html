@@ -435,6 +435,11 @@ for (const nome of lista) {
   const W = paisagem ? 297 : 210, H = paisagem ? 210 : 297;
   const div = document.createElement('div');
   div.className = 'folha' + (paisagem ? ' paisagem' : '');
+  if (paisagem && lista.length === 1) {
+    const st = document.createElement('style');
+    st.textContent = '@page { size: 297mm 210mm; margin: 0; }';
+    document.head.appendChild(st);
+  }
   div.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="url(#vinheta)"/>${f.join('')}</svg>
     <div class="grao" style="background-image:url(${grao});opacity:${T.grao}"></div>
