@@ -420,13 +420,113 @@ const modelos = {
     c.push(recorte('PÁG', 150, 271, 7.6, 0.62));
     c.push(linha(169, 274, 184, 274, T.tinta, 0.55, 0.25));
     return { f, c };
+  },
+
+  // ================= JORNAL COMPLETO =================
+
+  // 9) Capa do jornal
+  capa() {
+    const f = [cafe(203, 128, 14)], c = [];
+    const col = [[12, 70], [76, 134], [140, 198]];
+    const forte = (x1, x2, y) => linha(x1, y, x2, y, T.linha, Math.min(1, T.linhaOp * 1.8), 0.3);
+    const quadro = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${T.tinta}" stroke-opacity="0.6" stroke-width="0.45"/>` +
+      `<rect x="${x + 1.2}" y="${y + 1.2}" width="${w - 2.4}" height="${h - 2.4}" fill="none" stroke="${T.tinta}" stroke-opacity="0.4" stroke-width="0.18"/>`;
+    const foto = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#meiotom)" stroke="${T.tinta}" stroke-opacity="0.5" stroke-width="0.3"/>`;
+
+    // orelhas + nome do jornal
+    c.push(quadro(12, 14, 34, 19));
+    c.push(txt(29, 22, 'EDIÇÃO', { size: 2.6, anchor: 'middle', ls: 1 }));
+    c.push(txt(29.3, 29.3, 'EXTRA', { size: 5.6, cor: T.destaque, anchor: 'middle', ls: 0.6, fonte: "'Anton'" }));
+    c.push(quadro(164, 14, 34, 19));
+    c.push(txt(181, 21.5, 'EDIÇÃO Nº', { size: 2.6, anchor: 'middle', ls: 1 }));
+    c.push(linha(169, 28.5, 193, 28.5, T.tinta, 0.55, 0.25));
+    c.push(txt(105, 29, 'Diário da Meia-Noite', { size: 12, cor: T.tinta, ls: 0.2, anchor: 'middle', fonte: "'UnifrakturMaguntia'" }));
+
+    c.push(linha(L, 37, R, 37, T.tinta, 0.8, 0.6), linha(L, 38.3, R, 38.3, T.tinta, 0.6, 0.2));
+    c.push(txt(L, 43, 'CIDADE', { size: 2.6 }), campo(62, 43.3));
+    c.push(txt(105, 43, 'O JORNAL QUE SABE DEMAIS', { size: 2.4, anchor: 'middle', ls: 0.9 }));
+    c.push(txt(150, 43, 'DATA', { size: 2.6 }), campo(R, 43.3), barra(171, 42.8), barra(184, 42.8));
+    c.push(linha(L, 46, R, 46, T.tinta, 0.6, 0.25));
+
+    // manchete
+    c.push(txt(L, 52, 'MANCHETE', { size: 2.2, cor: T.destaque, ls: 1 }));
+    c.push(forte(L, R, 62), forte(L, R, 73));
+    c.push(linha(L, 81, R, 81, T.linha, T.linhaOp, 0.22));
+    c.push(txt(L, 88, 'POR', { size: 2.6 }), campo(80, 88.3));
+    c.push(linha(L, 92, R, 92, T.tinta, 0.6, 0.25));
+
+    // foto grande (2 colunas) + texto
+    c.push(foto(12, 97, 122, 51));
+    c.push(txt(L, 154, 'LEGENDA', { size: 2.2 }), campo(134, 154.3));
+    c.push(pautas(col[0][0], col[0][1], 162, 274, 7), pautas(col[1][0], col[1][1], 162, 274, 7));
+
+    // PROCURA-SE
+    c.push(quadro(140, 97, 58, 79));
+    c.push(txt(169.4, 108, 'PROCURA-SE', { size: 7.2, cor: T.tinta, anchor: 'middle', ls: 0.8, fonte: "'Anton'" }));
+    c.push(foto(149, 112, 40, 34));
+    c.push(txt(143.5, 154, 'NOME', { size: 2.4 }), campo(194.5, 154.3));
+    c.push(txt(143.5, 161, 'VISTO EM', { size: 2.4 }), campo(194.5, 161.3));
+    c.push(txt(143.5, 168, 'RECOMPENSA', { size: 2.4, cor: T.destaque }), campo(194.5, 168.3));
+    c.push(pautas(col[2][0], col[2][1], 186, 270, 7));
+
+    c.push(linha(L, 280, R, 280, T.tinta, 0.6, 0.25));
+    c.push(txt(L, 287, 'Diário da Meia-Noite', { size: 4.2, cor: T.tintaSuave, ls: 0.1, fonte: "'UnifrakturMaguntia'" }));
+    c.push(txt(150, 287, 'CONTINUA NA PÁG.', { size: 2.6 }), campo(R, 287.3));
+    return { f, c };
+  },
+
+  // 10) Página de dentro do jornal (pode repetir à vontade)
+  interna() {
+    const f = [cafe(6, 236, 13)], c = [];
+    const col = [[12, 70], [76, 134], [140, 198]];
+    const forte = (x1, x2, y) => linha(x1, y, x2, y, T.linha, Math.min(1, T.linhaOp * 1.8), 0.3);
+    const quadro = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="${T.tinta}" stroke-opacity="0.6" stroke-width="0.45"/>` +
+      `<rect x="${x + 1.2}" y="${y + 1.2}" width="${w - 2.4}" height="${h - 2.4}" fill="none" stroke="${T.tinta}" stroke-opacity="0.4" stroke-width="0.18"/>`;
+
+    // cabeçalho corrido
+    c.push(txt(L, 14.5, 'Diário da Meia-Noite', { size: 5.4, cor: T.tinta, ls: 0.1, fonte: "'UnifrakturMaguntia'" }));
+    c.push(txt(86, 14, 'DATA', { size: 2.6 }), campo(124, 14.3), barra(103, 13.8), barra(113, 13.8));
+    c.push(txt(168, 14, 'PÁG.', { size: 2.6 }), campo(R, 14.3));
+    c.push(linha(L, 17.5, R, 17.5, T.tinta, 0.8, 0.6), linha(L, 18.8, R, 18.8, T.tinta, 0.6, 0.2));
+
+    // faixa do capítulo
+    c.push(`<rect x="${L}" y="23" width="${R - L}" height="9.5" fill="${T.tinta}" fill-opacity="0.92"/>`);
+    c.push(txt(15, 30.2, 'CAPÍTULO', { size: 5.2, cor: T.papel, ls: 1, fonte: "'Anton'" }), campo(124, 30.3, T.papel));
+    c.push(txt(195, 29.6, 'CADERNO POLICIAL', { size: 2.6, cor: T.papel, ls: 1, anchor: 'end' }));
+
+    // matéria 1
+    c.push(forte(L, R, 44), forte(L, R, 55));
+    c.push(txt(L, 62.5, 'POR', { size: 2.6 }), campo(80, 62.8));
+    c.push(linha(L, 66, R, 66, T.tinta, 0.6, 0.25));
+    c.push(pautas(col[0][0], col[0][1], 73, 178, 7), pautas(col[1][0], col[1][1], 73, 178, 7));
+    c.push(`<rect x="140" y="70" width="58" height="36" fill="url(#meiotom)" stroke="${T.tinta}" stroke-opacity="0.5" stroke-width="0.3"/>`);
+    c.push(txt(140, 112, 'LEGENDA', { size: 2.2 }), campo(R, 112.3));
+    c.push(pautas(col[2][0], col[2][1], 122, 178, 7));
+
+    c.push(linha(L, 184, R, 184, T.tinta, 0.8, 0.5), linha(L, 185.2, R, 185.2, T.tinta, 0.6, 0.18));
+
+    // matéria 2
+    c.push(forte(L, 134, 197));
+    c.push(txt(L, 204, 'POR', { size: 2.6 }), campo(70, 204.3));
+    c.push(pautas(col[0][0], col[0][1], 212, 275, 7), pautas(col[1][0], col[1][1], 212, 275, 7));
+
+    // classificados
+    c.push(quadro(140, 190, 58, 86));
+    c.push(txt(169.3, 198.5, 'CLASSIFICADOS', { size: 4.4, cor: T.tinta, anchor: 'middle', ls: 0.6, fonte: "'Anton'" }));
+    c.push(linha(143, 201.5, 195, 201.5, T.tinta, 0.5, 0.2));
+    c.push(pautas(143, 195, 209, 272, 7));
+
+    c.push(linha(L, 280, R, 280, T.tinta, 0.6, 0.25));
+    c.push(txt(150, 287, 'CONTINUA NA PÁG.', { size: 2.6 }), campo(R, 287.3));
+    return { f, c };
   }
 };
 
 // ---------- monta as páginas ----------
 const grupos = {
   todos: ['relatorio', 'evidencia', 'contagem', 'cena'],
-  diferentes: ['jornal', 'noir', 'livro', 'bilhete']
+  diferentes: ['jornal', 'noir', 'livro', 'bilhete'],
+  jornalCompleto: ['capa', 'interna']
 };
 const lista = grupos[qual] || [qual];
 const box = document.getElementById('paginas');
