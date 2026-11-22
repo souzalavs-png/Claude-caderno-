@@ -4,15 +4,16 @@
 <meta charset="utf-8">
 <title>Modelos Suspense</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Limelight&family=Playfair+Display:wght@900&family=Special+Elite&family=UnifrakturMaguntia&display=block" rel="stylesheet">
 <style>
   @page { size: 210mm 297mm; margin: 0; }
   html, body { margin: 0; padding: 0; background: #000; }
   .folha { position: relative; width: 210mm; height: 297mm; overflow: hidden; }
+  .folha.paisagem { width: 297mm; height: 210mm; }
   .folha:not(:last-child) { break-after: page; }
   .folha > * { position: absolute; inset: 0; }
   .grao { background-size: 28mm 28mm; }
-  svg { display: block; width: 210mm; height: 297mm; }
+  svg { display: block; width: 100%; height: 100%; }
   text { font-family: 'Special Elite', 'Courier New', monospace; }
 </style>
 </head>
@@ -21,7 +22,8 @@
 <div id="paginas"></div>
 <script>
 (async () => {
-await document.fonts.load('10px "Special Elite"');
+await Promise.all(['10px "Special Elite"', '10px "Limelight"', '10px "UnifrakturMaguntia"', '10px "Anton"', '900 10px "Playfair Display"']
+  .map(f => document.fonts.load(f)));
 await document.fonts.ready;
 
 const q = new URLSearchParams(location.search);
@@ -35,7 +37,8 @@ const T = {
     destaque: '#a3302e', tinta: '#d9d2c3', tintaSuave: '#8d8778',
     carimbo: '#c0392f', digital: '#d9d2c3', digitalOp: 0.07,
     grao: 0.05, cafe: false,
-    polaroid: '#e6e1d6', foto: '#25242b', fita: '#d8b23c'
+    polaroid: '#e6e1d6', foto: '#25242b', fita: '#d8b23c',
+    ouro: '#c9a45c', bilhete: '#26252d', durex: '#cfc6a8', lombada: 0.45
   },
   dossie: {
     papel: '#f2e9d6', borda: '#d6c6a3',
@@ -43,7 +46,8 @@ const T = {
     destaque: '#b23a32', tinta: '#2c2724', tintaSuave: '#7a6f60',
     carimbo: '#b8312b', digital: '#3a2f26', digitalOp: 0.08,
     grao: 0.09, cafe: true,
-    polaroid: '#fbf8f1', foto: '#3a3631', fita: '#e3bc3e'
+    polaroid: '#fbf8f1', foto: '#3a3631', fita: '#e3bc3e',
+    ouro: '#8e6e33', bilhete: '#fbf8f0', durex: '#e6dcc0', lombada: 0.22
   }
 }[tema];
 
@@ -70,6 +74,17 @@ document.getElementById('defs').innerHTML = `<defs>
     <stop offset="60%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>
   </radialGradient>
   <mask id="mascaraDigital"><circle cx="0" cy="0" r="24" fill="url(#someDigital)"/></mask>
+  <pattern id="meiotom" width="1.3" height="1.3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="1.3" height="1.3" fill="${T.foto}" fill-opacity="0.35"/>
+    <circle cx="0.65" cy="0.65" r="0.3" fill="${T.tinta}" fill-opacity="0.3"/>
+  </pattern>
+  <linearGradient id="lombada" x1="0" x2="1" y1="0" y2="0">
+    <stop offset="0" stop-color="#000" stop-opacity="0"/>
+    <stop offset="0.42" stop-color="#000" stop-opacity="${T.lombada * 0.55}"/>
+    <stop offset="0.5" stop-color="#000" stop-opacity="${T.lombada}"/>
+    <stop offset="0.58" stop-color="#000" stop-opacity="${T.lombada * 0.55}"/>
+    <stop offset="1" stop-color="#000" stop-opacity="0"/>
+  </linearGradient>
 </defs>`;
 
 // textura de papel (azulejo pequeno, deixa o PDF leve)
@@ -87,8 +102,9 @@ const grao = (() => {
 // ---------- peças ----------
 let n = 0, clip = 0;
 const txt = (x, y, str, o = {}) => {
-  const { size = 3, cor = T.tintaSuave, ls = 0.6, anchor = 'start', op = 1 } = o;
-  return `<text id="r${++n}" x="${x}" y="${y}" font-size="${size}" fill="${cor}" fill-opacity="${op}" letter-spacing="${ls}" text-anchor="${anchor}">${str}</text>`;
+  const { size = 3, cor = T.tintaSuave, ls = 0.6, anchor = 'start', op = 1, fonte } = o;
+  const estilo = fonte ? ` style="font-family:${fonte}"` : '';
+  return `<text id="r${++n}" x="${x}" y="${y}" font-size="${size}" fill="${cor}" fill-opacity="${op}" letter-spacing="${ls}" text-anchor="${anchor}"${estilo}>${str}</text>`;
 };
 // linha de preencher que começa logo depois do último texto
 const campo = (x2, y, cor = T.tinta) =>
@@ -280,20 +296,149 @@ const modelos = {
     c.push(fita(174, 23, -22, 110));
     c.push(fita(30, 278, 33.7, 120));
     return { f, c };
+  },
+
+  // ================= LAYOUTS DIFERENTES =================
+
+  // 5) Jornal antigo em 2 colunas
+  jornal() {
+    const f = [cafe(201, 252, 15)], c = [];
+    const M = 105, c1b = 101, c2a = 109;
+    c.push(linha(L, 11, R, 11, T.tinta, 0.6, 0.25));
+    c.push(txt(L, 16, 'EDIÇÃO Nº', { size: 2.4 }), campo(48, 16.3));
+    c.push(txt(R, 16, 'ÚLTIMA HORA', { size: 2.4, cor: T.destaque, ls: 0.8, anchor: 'end' }));
+    c.push(txt(M, 31, 'Diário da Meia-Noite', { size: 13, cor: T.tinta, ls: 0.3, anchor: 'middle', fonte: "'UnifrakturMaguntia'" }));
+    c.push(linha(L, 35, R, 35, T.tinta, 0.8, 0.6), linha(L, 36.3, R, 36.3, T.tinta, 0.6, 0.2));
+    c.push(txt(L, 41, 'CAPÍTULO', { size: 2.6 }), campo(64, 41.3));
+    c.push(txt(M, 41, 'SÓ AS NOTÍCIAS QUE NINGUÉM QUER LER', { size: 2.2, anchor: 'middle' }));
+    c.push(txt(150, 41, 'DATA', { size: 2.6 }), campo(R, 41.3), barra(171, 40.8), barra(184, 40.8));
+    c.push(linha(L, 44, R, 44, T.tinta, 0.6, 0.25));
+
+    c.push(txt(L, 50, 'MANCHETE', { size: 2.2, cor: T.destaque, ls: 1 }));
+    c.push(linha(L, 59, R, 59, T.linha, Math.min(1, T.linhaOp * 1.8), 0.3));
+    c.push(linha(L, 69, R, 69, T.linha, Math.min(1, T.linhaOp * 1.8), 0.3));
+    c.push(linha(L, 74, R, 74, T.tinta, 0.6, 0.25));
+
+    c.push(`<rect x="${L}" y="79" width="${c1b - L}" height="46" fill="url(#meiotom)" stroke="${T.tinta}" stroke-opacity="0.5" stroke-width="0.3"/>`);
+    c.push(txt(L, 131, 'LEGENDA', { size: 2.2 }), campo(c1b, 131.3));
+    c.push(pautas(L, c1b, 140, 276));
+    c.push(pautas(c2a, R, 84, 276));
+
+    c.push(linha(L, 281, R, 281, T.tinta, 0.6, 0.25));
+    c.push(txt(92, 287.5, 'CONTINUA NA PÁGINA', { size: 2.6, anchor: 'middle' }), campo(128, 287.8));
+    return { f, c };
+  },
+
+  // 6) Moldura noir anos 20 (art déco)
+  noir() {
+    const f = [], c = [], o = T.ouro;
+    c.push(`<rect x="9" y="9" width="192" height="279" fill="none" stroke="${o}" stroke-opacity="0.85" stroke-width="0.5"/>`);
+    c.push(`<rect x="11.2" y="11.2" width="187.6" height="274.6" fill="none" stroke="${o}" stroke-opacity="0.6" stroke-width="0.2"/>`);
+    const leque = (x, y, sx, sy) => {
+      let g = '';
+      for (const r of [5, 7.5, 10]) g += `<path d="M${r},0 A${r},${r} 0 0 1 0,${r}" fill="none" stroke="${o}" stroke-opacity="0.75" stroke-width="${r === 10 ? 0.35 : 0.2}"/>`;
+      for (let i = 1; i < 6; i++) {
+        const a = i * 15 * Math.PI / 180;
+        g += `<line x1="${(3 * Math.cos(a)).toFixed(2)}" y1="${(3 * Math.sin(a)).toFixed(2)}" x2="${(14 * Math.cos(a)).toFixed(2)}" y2="${(14 * Math.sin(a)).toFixed(2)}" stroke="${o}" stroke-opacity="0.5" stroke-width="0.18"/>`;
+      }
+      return `<g transform="translate(${x},${y}) scale(${sx},${sy})">${g}</g>`;
+    };
+    c.push(leque(11.2, 11.2, 1, 1), leque(198.8, 11.2, -1, 1), leque(11.2, 285.8, 1, -1), leque(198.8, 285.8, -1, -1));
+    const losango = (cx, cy, r, cheio = false, w = 0.3) =>
+      `<path d="M${cx},${cy - r} L${cx + r},${cy} L${cx},${cy + r} L${cx - r},${cy}Z" fill="${cheio ? o : 'none'}" fill-opacity="0.85" stroke="${o}" stroke-opacity="0.85" stroke-width="${w}"/>`;
+
+    c.push(linha(55, 24, 99, 24, o, 0.7, 0.25), losango(105, 24, 3), losango(105, 24, 1.2, true), linha(111, 24, 155, 24, o, 0.7, 0.25));
+    c.push(txt(106.5, 38.5, 'CAPÍTULO', { size: 9, cor: T.tinta, ls: 3, anchor: 'middle', fonte: "'Limelight'" }));
+    c.push(linha(72, 49, 138, 49, T.tinta, 0.55, 0.25), losango(70.5, 49, 0.9, true), losango(139.5, 49, 0.9, true));
+    c.push(linha(40, 57, 96, 57, o, 0.6, 0.2), losango(100, 57, 0.9, true), losango(105, 57, 1.3, true), losango(110, 57, 0.9, true), linha(114, 57, 170, 57, o, 0.6, 0.2));
+
+    c.push(pautas(22, 188, 68, 260));
+
+    c.push(linha(55, 274, 96, 274, o, 0.7, 0.25), losango(105, 274, 7, false, 0.35), losango(105, 274, 5.8, false, 0.15), linha(114, 274, 155, 274, o, 0.7, 0.25));
+    return { f, c };
+  },
+
+  // 7) Livro aberto (folha deitada, 2 páginas)
+  livro() {
+    const W = 297, H = 210, f = [], c = [];
+    f.push(cafe(292, 32, 14));
+    f.push(`<rect x="${W / 2 - 16}" y="0" width="32" height="${H}" fill="url(#lombada)"/>`);
+    f.push(linha(W / 2, 0, W / 2, H, '#000', 0.3, 0.25));
+    const pag = [[16, 136], [161, 281]];
+    c.push(txt(16, 16, 'HISTÓRIA', { size: 2.4 }), campo(136, 16.3));
+    c.push(txt(161, 16, 'CAPÍTULO', { size: 2.4 }), campo(281, 16.3));
+    for (const [a, b] of pag) {
+      c.push(linha(a, 20.5, b, 20.5, T.tinta, 0.4, 0.2));
+      c.push(pautas(a, b, 30, 190));
+    }
+    c.push(digital(258, 170, -15));
+    c.push(txt(16, 200, 'PÁG.', { size: 2.4 }), campo(34, 200.3));
+    c.push(txt(263, 200, 'PÁG.', { size: 2.4 }), campo(281, 200.3));
+    return { f, c, paisagem: true };
+  },
+
+  // 8) Bilhete anônimo (papel rasgado + letras recortadas)
+  bilhete() {
+    const f = [], c = [];
+    const x0 = 16, x1 = 194, y0 = 18, y1 = 281;
+    const p = [];
+    for (let x = x0; x <= x1; x += 2) p.push([x, y0 + (rnd() - 0.5) * 1.8]);
+    for (let y = y0 + 4; y < y1; y += 4) p.push([x1 + (rnd() - 0.5) * 0.7, y]);
+    for (let x = x1; x >= x0; x -= 2) p.push([x, y1 + (rnd() - 0.5) * 1.8]);
+    for (let y = y1 - 4; y > y0; y -= 4) p.push([x0 + (rnd() - 0.5) * 0.7, y]);
+    const d = 'M' + p.map(([x, y]) => x.toFixed(2) + ',' + y.toFixed(2)).join('L') + 'Z';
+    f.push(`<path d="${d}" fill="#000" fill-opacity="0.28" transform="translate(0.8,1.4)"/>`);
+    f.push(`<path d="${d}" fill="${T.bilhete}"/>`);
+
+    const durex = (x, y, a) => `<rect x="-11" y="-3.5" width="22" height="7" fill="${T.durex}" fill-opacity="0.6" transform="translate(${x},${y}) rotate(${a})"/>`;
+    c.push(durex(x0 + 3, y0 + 3, -35), durex(x1 - 3, y0 + 3, 35));
+
+    const cores = [['#e2cf9e', '#1a1a1a'], ['#1f1f1f', '#f2efe6'], ['#b8312b', '#fff6ea'], ['#cfd8dc', '#1a1a1a'],
+                   ['#d9c27a', '#1a1a1a'], ['#3d4b5c', '#f2efe6'], ['#e8d2c4', '#7a2420'], ['#7a2420', '#f3e7d3']];
+    const fontes = [["'Special Elite'", 400], ["'Limelight'", 400], ["'Anton'", 400], ["'Playfair Display'", 900], ["'DejaVu Serif'", 700]];
+    const recorte = (letras, xIni, yBase, passo, escala) => {
+      let out = '';
+      [...letras].forEach((ch, i) => {
+        const [fundo, tinta] = cores[(i * 3 + Math.floor(rnd() * 2)) % cores.length];
+        const [fam, peso] = fontes[(i * 2 + Math.floor(rnd() * 3)) % fontes.length];
+        const w = (9.5 + rnd() * 2.2) * escala, h = (11.5 + rnd() * 2.5) * escala;
+        const rot = ((rnd() - 0.5) * 12).toFixed(1), dy = ((rnd() - 0.5) * 2.2 * escala).toFixed(2);
+        const tam = ((7.5 + rnd() * 2.5) * escala).toFixed(2);
+        out += `<g transform="translate(${(xIni + i * passo).toFixed(2)},${(yBase + +dy).toFixed(2)}) rotate(${rot})">
+          <rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" fill="${fundo}" stroke="#000" stroke-opacity="0.3" stroke-width="0.18"/>
+          <text x="0" y="0" text-anchor="middle" dominant-baseline="central" font-size="${tam}" fill="${tinta}" style="font-family:${fam};font-weight:${peso}">${ch}</text>
+        </g>`;
+      });
+      return out;
+    };
+    const titulo = 'CAPÍTULO', passo = 12.2;
+    c.push(recorte(titulo, 105 - (titulo.length - 1) * passo / 2, 38, passo, 1));
+    c.push(linha(70, 56, 140, 56, T.tinta, 0.55, 0.25));
+
+    c.push(pautas(26, 184, 66, 258));
+
+    c.push(recorte('PÁG', 150, 271, 7.6, 0.62));
+    c.push(linha(169, 274, 184, 274, T.tinta, 0.55, 0.25));
+    return { f, c };
   }
 };
 
 // ---------- monta as páginas ----------
-const lista = qual === 'todos' ? Object.keys(modelos) : [qual];
+const grupos = {
+  todos: ['relatorio', 'evidencia', 'contagem', 'cena'],
+  diferentes: ['jornal', 'noir', 'livro', 'bilhete']
+};
+const lista = grupos[qual] || [qual];
 const box = document.getElementById('paginas');
 for (const nome of lista) {
-  const { f, c } = modelos[nome]();
+  const { f, c, paisagem } = modelos[nome]();
+  const W = paisagem ? 297 : 210, H = paisagem ? 210 : 297;
   const div = document.createElement('div');
-  div.className = 'folha';
+  div.className = 'folha' + (paisagem ? ' paisagem' : '');
   div.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><rect width="210" height="297" fill="url(#vinheta)"/>${f.join('')}</svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="url(#vinheta)"/>${f.join('')}</svg>
     <div class="grao" style="background-image:url(${grao});opacity:${T.grao}"></div>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297">${c.join('\n')}</svg>`;
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">${c.join('\n')}</svg>`;
   box.appendChild(div);
 }
 
