@@ -25,7 +25,9 @@ button{font:inherit;color:inherit}
 .top span{color:var(--mag);white-space:nowrap}
 
 /* topo / hero */
-.hero{position:relative;min-height:220px}
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,1fr) clamp(132px,31vw,214px);gap:0 14px;align-items:start}
+.hero-l{min-width:0}
+.hero-r{position:relative;min-width:0}
 .eyebrow{display:inline-block;padding:5px 10px 4px;border-radius:6px;background:var(--plum);color:var(--lime);font:14px/1.1 var(--display);letter-spacing:.04em}
 h1{margin:12px 0 0;font:400 clamp(46px,12.5vw,82px)/.9 var(--serif);text-transform:uppercase;letter-spacing:-.005em}
 h1>span{display:block}
@@ -34,9 +36,8 @@ h1 .hl::after{content:"”";position:absolute;right:-.42em;top:-.18em;font-size:
 .sub{margin:16px 0 0;max-width:330px;font:italic 21px/1.2 var(--serif);color:var(--mag)}
 .spark{position:absolute;color:var(--mag);font-size:22px;line-height:1;pointer-events:none}
 .spark.s1{right:46%;top:4px;font-size:18px;color:var(--pink)}
-.spark.s2{right:-4px;top:58%;font-size:16px}
 
-.meter{position:absolute;right:0;top:-6px;width:clamp(132px,31vw,214px);aspect-ratio:140/136}
+.meter{position:relative;width:100%;aspect-ratio:140/136;margin-top:-6px}
 .meter .blob{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
 .meter .ring{position:absolute;left:15%;top:13%;width:70%;height:72%;overflow:visible}
 .ring .arc{transition:stroke-dashoffset .8s cubic-bezier(.3,1.3,.5,1)}
@@ -47,6 +48,31 @@ h1 .hl::after{content:"”";position:absolute;right:-.42em;top:-.18em;font-size:
 .bubble::after{content:"";position:absolute;width:14px;height:12px;background:inherit;clip-path:polygon(0 0,100% 0,30% 100%)}
 .meter .bubble{right:42%;bottom:-6px;transform:rotate(-5deg)}
 .meter .bubble::after{right:-8px;top:6px;transform:rotate(-80deg)}
+
+/* pomodoro */
+.timer{position:relative;margin-top:24px;padding:10px 11px 11px;background:var(--white);border:2px solid var(--plum);border-radius:12px;box-shadow:4px 4px 0 var(--lime);text-align:center;transition:box-shadow .3s}
+.timer.running{box-shadow:4px 4px 0 var(--pink)}
+.tmtop{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.tmpill{padding:4px 7px 3px;border-radius:6px;background:var(--plum);color:var(--pink);font:12px/1 var(--display);letter-spacing:.04em;white-space:nowrap}
+.timer.running .tmpill{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{background:var(--mag);color:var(--white)}}
+.tmreset{flex:none;width:24px;height:24px;padding:0;display:grid;place-items:center;border:2px solid var(--plum);border-radius:50%;background:var(--white);color:var(--plum);font:700 13px/1 var(--sans);cursor:pointer}
+.tmreset:active{transform:scale(.9)}
+.tmtime{display:block;margin:7px 0 6px;font:400 clamp(34px,8.6vw,50px)/1 var(--serif);font-variant-numeric:tabular-nums}
+.timer.finished .tmtime{color:var(--mag);font-style:italic}
+.timer.finished{animation:wiggle .45s ease-in-out 3}
+@keyframes wiggle{25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+.tmtrack{height:9px;border:2px solid var(--plum);border-radius:8px;background:var(--blush);overflow:hidden}
+#tmbar{height:100%;width:0;background:repeating-linear-gradient(-45deg,var(--lime) 0 5px,var(--limes) 5px 10px);transition:width .25s linear}
+.tmctrl{display:flex;justify-content:center;align-items:center;gap:7px;margin-top:10px}
+.tmbtn{width:34px;height:34px;padding:0;display:grid;place-items:center;border:2px solid var(--plum);border-radius:50%;background:var(--white);color:var(--plum);font:17px/1 var(--display);cursor:pointer;box-shadow:2px 2px 0 var(--pink);transition:transform .08s,box-shadow .08s}
+.tmbtn:active{transform:translate(2px,2px);box-shadow:none}
+.tmbtn.play{width:42px;height:42px;background:var(--lime);box-shadow:2px 2px 0 var(--plum)}
+.tmbtn:disabled,.preset:disabled{opacity:.35;cursor:default;transform:none}
+.presets{display:flex;justify-content:center;align-items:center;gap:4px;margin-top:9px}
+.preset{padding:4px 7px 3px;border:1.5px solid var(--plum);border-radius:6px;background:var(--white);color:var(--plum);font:11px/1 var(--display);cursor:pointer}
+.preset.on{background:var(--pink)}
+.pmin{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--mag)}
 
 /* barra de progresso */
 .strip{margin-top:24px;padding:12px 14px 14px;background:var(--white);border:2px solid var(--plum);border-radius:12px;box-shadow:4px 4px 0 var(--pink)}
@@ -170,8 +196,16 @@ h2 .hl{background:var(--pink)}
 @keyframes conf{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}70%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r)) scale(1);opacity:0}}
 
 @media (max-width:560px){
- .hero{min-height:0}
- .meter{top:-2px}
+ .hero{gap:0 10px}
+ .meter{margin-top:-2px}
+ .timer{padding:8px 7px 9px}
+ .tmbtn{width:30px;height:30px;font-size:14px}
+ .tmbtn.play{width:36px;height:36px}
+ .tmctrl{gap:5px}
+ .preset{padding:4px 5px 3px}
+ .pmin{display:none}
+ .tmpill{padding:4px 5px 3px;font-size:11px;letter-spacing:.02em}
+ .tmtop{gap:4px}
  .sub{max-width:none;font-size:19px}
  .task{grid-template-columns:1fr 118px;gap:8px;min-height:150px}
  .pic{max-width:118px}
@@ -194,15 +228,26 @@ h2 .hl{background:var(--pink)}
 <div class="top"><b>♡ MEU CANTINHO DE ORGANIZAÇÃO</b><span id="date">DOMINGO · 22 NOV 2026</span></div>
 
 <header class="hero">
-<span class="spark s1" aria-hidden="true">✦</span><span class="spark s2" aria-hidden="true">✦</span>
+<span class="spark s1" aria-hidden="true">✦</span>
+<div class="hero-l">
 <div class="eyebrow">UM PASSO DE CADA VEZ</div>
 <h1><span>Seu dia,</span><span>no seu</span><span><span class="hl">ritmo.</span></span></h1>
 <p class="sub">Não precisa olhar para tudo agora. Vamos cuidar apenas da próxima ação. 🌷</p>
+</div>
+<div class="hero-r">
 <div class="meter" aria-hidden="true">
 <svg class="blob" viewBox="0 0 140 136" preserveAspectRatio="none"><path d="M60 6 C 96 1, 131 22, 134 60 C 137 95, 110 126, 73 130 C 37 134, 6 111, 5 74 C 4 38, 26 11, 60 6 Z" fill="#E3EBA6" stroke="#4A1631" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
 <svg class="ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#FFFFFF" stroke="#4A1631" stroke-width="2"/><circle cx="50" cy="50" r="40" fill="none" stroke="#F7DCE9" stroke-width="9"/><circle class="arc" id="arc" cx="50" cy="50" r="40" fill="none" stroke="#EBA2C6" stroke-width="9" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="251.33" transform="rotate(-90 50 50)"/><circle cx="50" cy="50" r="34.5" fill="none" stroke="#4A1631" stroke-width="1.5"/></svg>
 <div class="center"><span class="num" id="ringnum">0</span><span class="of" id="ringof">DE 0</span></div>
 <span class="bubble">cada ✓ conta</span>
+</div>
+<section class="timer" id="timer" aria-label="Pomodoro">
+<div class="tmtop"><span class="tmpill">POMODORO 🍅</span><button class="tmreset" id="tmreset" type="button" aria-label="Zerar o timer" title="Zerar">↺</button></div>
+<span class="tmtime" id="tmtime" aria-live="off">25:00</span>
+<div class="tmtrack" aria-hidden="true"><div id="tmbar"></div></div>
+<div class="tmctrl"><button class="tmbtn" id="tmminus" type="button" aria-label="Menos tempo" title="Menos tempo">−</button><button class="tmbtn play" id="tmplay" type="button" aria-label="Começar">▶</button><button class="tmbtn" id="tmplus" type="button" aria-label="Mais tempo" title="Mais tempo">+</button></div>
+<div class="presets"><button class="preset" type="button" data-m="5" title="5 minutos">5</button><button class="preset" type="button" data-m="15" title="15 minutos">15</button><button class="preset" type="button" data-m="25" title="25 minutos">25</button><button class="preset" type="button" data-m="50" title="50 minutos">50</button><span class="pmin">min</span></div>
+</section>
 </div>
 </header>
 
@@ -293,4 +338,32 @@ $("back").onclick=()=>{if(busy)return;let r=remaining();if(r.length)pos=(pos-1+r
 $("toggle").onclick=()=>{$("overview").classList.toggle("open");$("toggle").textContent=$("overview").classList.contains("open")?"Ocultar ↑":"Ver todas ↓"};
 $("water").onclick=()=>{$("watertext").textContent=(++water)+" pausa(s) registrada(s). Bom cuidar de você! 💗";drops();let[x,y]=centerOf($("water"));burst(x,y,6);save()};
 render();
+/* pomodoro: um timer simples, com o tempo que você escolher */
+const TM={min:25,end:0,left:0,running:false,done:false},TKEY="meu-planner:pomodoro";
+let ac=null,beeps=[],scheduled=false,tick=null;
+function fmt(s){s=Math.max(0,Math.ceil(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function secsLeft(){return TM.running?(TM.end-Date.now())/1000:(TM.left||TM.min*60)}
+function tSave(){try{localStorage.setItem(TKEY,JSON.stringify({min:TM.min,end:TM.running?TM.end:0,left:TM.running?0:TM.left}))}catch(e){}}
+function tLoad(){try{let s=JSON.parse(localStorage.getItem(TKEY)||"null");if(!s)return;TM.min=Math.min(180,Math.max(1,s.min|0||25));if(s.end&&s.end>Date.now()){TM.end=s.end;TM.running=true}else if(s.left>0)TM.left=s.left}catch(e){}}
+function audio(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")ac.resume()}catch(e){ac=null}}
+function unschedule(){beeps.forEach(o=>{try{o.stop()}catch(e){}});beeps=[];scheduled=false}
+function schedule(sec){unschedule();if(!ac)return;try{let t0=ac.currentTime+Math.max(0,sec);[0,.3,.6,1.3,1.6,1.9].forEach((d,i)=>{let o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.value=i%3===2?1175:880;g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.22,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+.28);o.connect(g);g.connect(ac.destination);o.start(t0+d);o.stop(t0+d+.3);beeps.push(o)});scheduled=true}catch(e){}}
+function tRender(){let s=secsLeft(),tot=TM.min*60;$("tmtime").textContent=TM.done?"acabou!":fmt(s);$("tmbar").style.width=(TM.done?100:Math.min(100,Math.max(0,(1-s/tot)*100)))+"%";
+let pl=$("tmplay");pl.textContent=TM.running?"❚❚":"▶";pl.setAttribute("aria-label",TM.running?"Pausar":"Começar");
+$("tmminus").disabled=$("tmplus").disabled=TM.running;document.querySelectorAll(".preset").forEach(b=>{b.disabled=TM.running;b.classList.toggle("on",+b.dataset.m===TM.min)});
+$("timer").classList.toggle("running",TM.running);$("timer").classList.toggle("finished",TM.done);
+document.title=TM.running?"🍅 "+fmt(s)+" · Meu planner":TM.done?"⏰ Acabou! · Meu planner":"Meu planner"}
+function loop(){clearInterval(tick);tick=setInterval(()=>{if(TM.running&&Date.now()>=TM.end)tFinish();else tRender()},250)}
+function tStart(){audio();TM.done=false;let s=TM.left>0?TM.left:TM.min*60;TM.end=Date.now()+s*1000;TM.left=0;TM.running=true;schedule(s);loop();tSave();tRender()}
+function tPause(){TM.left=Math.max(1,(TM.end-Date.now())/1000);TM.running=false;unschedule();clearInterval(tick);tSave();tRender()}
+function tReset(){TM.running=false;TM.left=0;TM.done=false;unschedule();clearInterval(tick);tSave();tRender()}
+function tFinish(){clearInterval(tick);TM.running=false;TM.left=0;TM.done=true;if(!scheduled){audio();schedule(0)}scheduled=false;beeps=[];try{navigator.vibrate&&navigator.vibrate([200,100,200,100,300])}catch(e){}let[x,y]=centerOf($("timer"));burst(x,y,26);tSave();tRender()}
+function setMin(m){TM.min=Math.max(1,Math.min(180,m));TM.left=0;TM.done=false;tSave();tRender()}
+$("tmplay").onclick=()=>TM.running?tPause():tStart();
+$("tmreset").onclick=tReset;
+$("tmminus").onclick=()=>setMin(TM.min>5?TM.min-5:TM.min-1);
+$("tmplus").onclick=()=>setMin(TM.min<5?TM.min+1:TM.min+5);
+document.querySelectorAll(".preset").forEach(b=>b.onclick=()=>setMin(+b.dataset.m));
+document.addEventListener("visibilitychange",()=>{if(TM.running&&Date.now()>=TM.end)tFinish();else tRender()});
+tLoad();if(TM.running)loop();tRender();
 </script></body></html>
