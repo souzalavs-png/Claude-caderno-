@@ -146,9 +146,6 @@ for (let y = topo; y <= fim; y += passo) {
   svg.push(`<line x1="${L}" y1="${y}" x2="${R}" y2="${y}" stroke="${T.linha}" stroke-opacity="${T.linhaOp}" stroke-width="0.22"/>`);
 }
 
-// margem vermelha (dupla)
-svg.push(`<line x1="34" y1="43.6" x2="34" y2="280" stroke="${T.margem}" stroke-opacity="0.75" stroke-width="0.3"/>`);
-svg.push(`<line x1="35.1" y1="43.6" x2="35.1" y2="280" stroke="${T.margem}" stroke-opacity="0.45" stroke-width="0.15"/>`);
 
 // coluna de pistas
 svg.push(`<text x="23" y="49.3" text-anchor="middle" font-size="2.5" fill="${T.margem}" fill-opacity="0.85" letter-spacing="0.8">PISTAS</text>`);
