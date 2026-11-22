@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Modelos Suspense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=block" rel="stylesheet">
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  html, body { margin: 0; padding: 0; background: #000; }
+  .folha { position: relative; width: 210mm; height: 297mm; overflow: hidden; }
+  .folha:not(:last-child) { break-after: page; }
+  .folha > * { position: absolute; inset: 0; }
+  .grao { background-size: 28mm 28mm; }
+  svg { display: block; width: 210mm; height: 297mm; }
+  text { font-family: 'Special Elite', 'Courier New', monospace; }
+</style>
+</head>
+<body>
+<svg id="defs" width="0" height="0" style="position:absolute"></svg>
+<div id="paginas"></div>
+<script>
+(async () => {
+await document.fonts.load('10px "Special Elite"');
+await document.fonts.ready;
+
+const q = new URLSearchParams(location.search);
+const tema = q.get('tema') || 'noite';
+const qual = q.get('layout') || 'todos';
+
+const T = {
+  noite: {
+    papel: '#16151b', borda: '#09090c',
+    linha: '#a3a8bd', linhaOp: 0.24,
+    destaque: '#a3302e', tinta: '#d9d2c3', tintaSuave: '#8d8778',
+    carimbo: '#c0392f', digital: '#d9d2c3', digitalOp: 0.07,
+    grao: 0.05, cafe: false,
+    polaroid: '#e6e1d6', foto: '#25242b', fita: '#d8b23c'
+  },
+  dossie: {
+    papel: '#f2e9d6', borda: '#d6c6a3',
+    linha: '#6f7f97', linhaOp: 0.5,
+    destaque: '#b23a32', tinta: '#2c2724', tintaSuave: '#7a6f60',
+    carimbo: '#b8312b', digital: '#3a2f26', digitalOp: 0.08,
+    grao: 0.09, cafe: true,
+    polaroid: '#fbf8f1', foto: '#3a3631', fita: '#e3bc3e'
+  }
+}[tema];
+
+// aleatório com semente fixa (o desenho sai sempre igual)
+let s = 7;
+const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+const L = 12, R = 198;
+
+// ---------- defs compartilhados ----------
+document.getElementById('defs').innerHTML = `<defs>
+  <radialGradient id="vinheta" cx="50%" cy="45%" r="75%">
+    <stop offset="55%" stop-color="${T.papel}"/><stop offset="100%" stop-color="${T.borda}"/>
+  </radialGradient>
+  <filter id="gasto" x="-10%" y="-30%" width="120%" height="160%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="r"/>
+    <feDisplacementMap in="SourceGraphic" in2="r" scale="0.9"/>
+  </filter>
+  <filter id="sombra" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0.5" dy="0.9" stdDeviation="0.9" flood-color="#000" flood-opacity="0.35"/>
+  </filter>
+  <radialGradient id="someDigital">
+    <stop offset="60%" stop-color="#fff" stop-opacity="1"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <mask id="mascaraDigital"><circle cx="0" cy="0" r="24" fill="url(#someDigital)"/></mask>
+</defs>`;
+
+// textura de papel (azulejo pequeno, deixa o PDF leve)
+const grao = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 160;
+  const ctx = c.getContext('2d'), img = ctx.createImageData(160, 160);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = rnd() < 0.5 ? 0 : 255;
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = Math.floor(rnd() * 255);
+  }
+  ctx.putImageData(img, 0, 0);
+  return c.toDataURL('image/png');
+})();
+
+// ---------- peças ----------
+let n = 0, clip = 0;
+const txt = (x, y, str, o = {}) => {
+  const { size = 3, cor = T.tintaSuave, ls = 0.6, anchor = 'start', op = 1 } = o;
+  return `<text id="r${++n}" x="${x}" y="${y}" font-size="${size}" fill="${cor}" fill-opacity="${op}" letter-spacing="${ls}" text-anchor="${anchor}">${str}</text>`;
+};
+// linha de preencher que começa logo depois do último texto
+const campo = (x2, y, cor = T.tinta) =>
+  `<line data-apos="r${n}" x1="0" y1="${y}" x2="${x2}" y2="${y}" stroke="${cor}" stroke-opacity="0.55" stroke-width="0.25"/>`;
+const linha = (x1, y1, x2, y2, cor = T.tinta, op = 0.45, w = 0.18) =>
+  `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${cor}" stroke-opacity="${op}" stroke-width="${w}"/>`;
+const caixa = (x, y, w, h, cor = T.tintaSuave) =>
+  `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="0.3" fill="none" stroke="${cor}" stroke-width="0.3"/>`;
+const pautas = (x1, x2, y0, y1, passo = 8) => {
+  const out = [];
+  for (let y = y0; y <= y1 + 0.01; y += passo)
+    out.push(`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${T.linha}" stroke-opacity="${T.linhaOp}" stroke-width="0.22"/>`);
+  return out.join('');
+};
+const separador = (y, x1 = L, x2 = R) =>
+  linha(x1, y, x2, y, T.tinta, 0.7, 0.5) + linha(x1, y + 1, x2, y + 1, T.tinta, 0.45, 0.18);
+const barra = (x, y) => `<text x="${x}" y="${y}" font-size="3.4" fill="${T.tintaSuave}">/</text>`;
+
+const digital = (cx, cy, rot) => {
+  const g = [];
+  for (let i = 1; i <= 17; i++) {
+    const rx = 1 + i * 1.25, ry = rx * 1.32;
+    const per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    let dash = [], tot = 0;
+    while (tot < per) { const a = 4 + rnd() * 16, b = 0.5 + rnd() * 1.4; dash.push(a.toFixed(2), b.toFixed(2)); tot += a + b; }
+    g.push(`<ellipse cx="${((rnd() - 0.5) * 0.4).toFixed(2)}" cy="${(i * 0.18).toFixed(2)}" rx="${rx}" ry="${ry}" fill="none" stroke="${T.digital}" stroke-width="0.42" stroke-dasharray="${dash.join(' ')}" stroke-dashoffset="${(rnd() * 20).toFixed(1)}"/>`);
+  }
+  return `<g transform="translate(${cx},${cy}) rotate(${rot})" opacity="${T.digitalOp}"><g mask="url(#mascaraDigital)">${g.join('')}</g></g>`;
+};
+
+const cafe = (cx, cy, r) => {
+  if (!T.cafe) return '';
+  let d = '';
+  for (let a = 0; a <= 360; a += 6) {
+    const rr = r + (rnd() - 0.5) * 0.7, rad = a * Math.PI / 180;
+    d += (a ? 'L' : 'M') + (cx + rr * Math.cos(rad)).toFixed(2) + ',' + (cy + rr * Math.sin(rad)).toFixed(2);
+  }
+  return `<path d="${d}Z" fill="#8a5a2b" fill-opacity="0.035" stroke="#7a4a1f" stroke-opacity="0.13" stroke-width="0.9"/>` +
+         `<path d="${d}Z" fill="none" stroke="#7a4a1f" stroke-opacity="0.08" stroke-width="2.2" stroke-dasharray="30 8 12 20" transform="translate(0.4,0.3)"/>`;
+};
+
+const carimbo = (cx, cy, rot, palavra, w) => `<g transform="translate(${cx},${cy}) rotate(${rot})" filter="url(#gasto)" opacity="0.82">
+  <rect x="${-w / 2}" y="-6.6" width="${w}" height="13.2" rx="1" fill="none" stroke="${T.carimbo}" stroke-width="0.9"/>
+  <rect x="${-w / 2 + 1.6}" y="-5" width="${w - 3.2}" height="10" rx="0.6" fill="none" stroke="${T.carimbo}" stroke-width="0.35"/>
+  <text x="0" y="1.9" text-anchor="middle" font-size="5.4" fill="${T.carimbo}" textLength="${w - 9}" lengthAdjust="spacingAndGlyphs">${palavra}</text>
+</g>`;
+
+const gota = 'M0,-2.6 C1.2,-0.9 1.9,0.3 1.9,1.1 A1.9,1.9 0 1 1 -1.9,1.1 C-1.9,0.3 -1.2,-0.9 0,-2.6 Z';
+const tensao = (x, y) => {
+  let out = txt(x, y, 'TENSÃO', { size: 2.8 });
+  for (let i = 0; i < 5; i++)
+    out += `<path d="${gota}" transform="translate(${x + 19 + i * 5.4},${y - 1.4})" fill="none" stroke="${T.destaque}" stroke-opacity="0.9" stroke-width="0.32"/>`;
+  return out;
+};
+const pagina = (y) => txt(168, y, 'PÁG.', { size: 2.8 }) + campo(R, y + 0.3);
+
+const fita = (cx, cy, ang, len) => {
+  const id = 'fita' + (++clip);
+  const frase = 'CENA DO CRIME · NÃO ULTRAPASSE · ';
+  return `<g transform="translate(${cx},${cy}) rotate(${ang})" filter="url(#sombra)">
+    <clipPath id="${id}"><rect x="${-len / 2}" y="-4.5" width="${len}" height="9"/></clipPath>
+    <rect x="${-len / 2}" y="-4.5" width="${len}" height="9" fill="${T.fita}"/>
+    <g clip-path="url(#${id})">
+      <line x1="${-len / 2}" y1="-3.7" x2="${len / 2}" y2="-3.7" stroke="#1a1712" stroke-width="0.35"/>
+      <line x1="${-len / 2}" y1="3.7" x2="${len / 2}" y2="3.7" stroke="#1a1712" stroke-width="0.35"/>
+      <text x="${-len / 2 + 2}" y="1.3" font-size="3.6" fill="#1a1712" letter-spacing="0.5">${frase.repeat(4)}</text>
+    </g>
+  </g>`;
+};
+
+// ---------- MODELOS ----------
+const modelos = {
+
+  // 1) Relatório policial
+  relatorio() {
+    const f = [cafe(4, 150, 14)], c = [];
+    c.push(txt(105, 14.5, 'DIVISÃO DE CASOS SEM SOLUÇÃO', { size: 2.5, ls: 1, anchor: 'middle' }));
+    c.push(txt(105, 23.5, 'RELATÓRIO DE OCORRÊNCIA', { size: 5.8, cor: T.tinta, ls: 1.1, anchor: 'middle' }));
+    c.push(carimbo(181, 15, 7, 'SIGILOSO', 30));
+
+    const y0 = 30, y1 = 43, y2 = 56;
+    c.push(`<rect x="${L}" y="${y0}" width="${R - L}" height="${y2 - y0}" fill="none" stroke="${T.tinta}" stroke-opacity="0.6" stroke-width="0.35"/>`);
+    c.push(linha(L, y1, R, y1, T.tinta, 0.5, 0.25));
+    for (const x of [62, 132, 165]) c.push(linha(x, y0, x, y1, T.tinta, 0.5, 0.25));
+    c.push(linha(105, y1, 105, y2, T.tinta, 0.5, 0.25));
+    const rot = (x, y, s) => txt(x, y, s, { size: 2.2, ls: 0.5 });
+    c.push(rot(L + 1.8, y0 + 3.6, 'Nº OCORRÊNCIA'), rot(63.8, y0 + 3.6, 'CAPÍTULO'),
+           rot(133.8, y0 + 3.6, 'DATA'), rot(166.8, y0 + 3.6, 'HORA'),
+           rot(L + 1.8, y1 + 3.6, 'LOCAL'), rot(106.8, y1 + 3.6, 'ENVOLVIDOS'));
+    c.push(barra(142.5, y1 - 3), barra(152.5, y1 - 3));
+    c.push(`<text x="181" y="${y1 - 3}" font-size="3.4" fill="${T.tintaSuave}" text-anchor="middle">:</text>`);
+
+    c.push(txt(L, 64, 'RELATO DOS FATOS', { size: 3, cor: T.tinta, ls: 0.8 }));
+    c.push(linha(L, 66, R, 66));
+    c.push(pautas(L, R, 74, 266));
+    c.push(digital(38, 246, 20));
+
+    c.push(linha(L, 276, R, 276));
+    c.push(txt(L, 284, 'INVESTIGADOR', { size: 2.6 }), campo(84, 284.3));
+    c.push(txt(94, 284, 'STATUS', { size: 2.6 }));
+    c.push(caixa(111, 281.4, 3, 3), txt(115.8, 284, 'ABERTO', { size: 2.6 }));
+    c.push(caixa(134, 281.4, 3, 3), txt(138.8, 284, 'ENCERRADO', { size: 2.6 }));
+    c.push(txt(168, 284, 'FL.', { size: 2.6 }), campo(R, 284.3));
+    return { f, c };
+  },
+
+  // 2) Evidência com foto polaroid
+  evidencia() {
+    const f = [cafe(203, 165, 15)], c = [];
+    const escuro = '#4a453f';
+    c.push(`<g transform="translate(48,55) rotate(-4)">
+      <rect x="-35" y="-41" width="70" height="82" fill="${T.polaroid}" filter="url(#sombra)"/>
+      <rect x="-31" y="-37" width="62" height="60" fill="${T.foto}"/>
+      ${txt(-30, 33.5, 'EVIDÊNCIA Nº', { size: 2.9, cor: escuro, ls: 0.6 })}${campo(30, 33.8, escuro)}
+      <ellipse cx="0.6" cy="-36.4" rx="2.6" ry="1.4" fill="#000" fill-opacity="0.25"/>
+      <circle cx="0" cy="-38" r="2.5" fill="${T.carimbo}"/>
+      <circle cx="-0.8" cy="-38.8" r="0.8" fill="#fff" fill-opacity="0.45"/>
+    </g>`);
+    const x0 = 95;
+    c.push(txt(x0, 20, 'ARQUIVO · CASO Nº', { size: 2.6 }), campo(R, 20.3));
+    c.push(txt(x0, 33, 'CAPÍTULO', { size: 6.4, cor: T.tinta, ls: 1.2 }), campo(R, 33.3));
+    c.push(txt(x0, 44, 'CENA'), campo(146, 44.3));
+    c.push(txt(151, 44, 'DATA'), campo(R, 44.3), barra(172, 43.8), barra(185, 43.8));
+    c.push(separador(49.5, x0));
+    c.push(pautas(x0, R, 58, 98));
+    c.push(pautas(L, R, 106, 274));
+    c.push(digital(178, 200, -12));
+
+    c.push(linha(L, 280, R, 280));
+    c.push(tensao(L, 287.6), pagina(287.6));
+    return { f, c };
+  },
+
+  // 3) Contagem regressiva (hora em cada linha)
+  contagem() {
+    const f = [cafe(8, 232, 14)], c = [];
+    c.push(txt(L, 15.5, 'ARQUIVO · CASO Nº', { size: 2.6 }), campo(70, 15.8));
+    c.push(txt(L, 27.5, 'CONTAGEM REGRESSIVA', { size: 6.4, cor: T.tinta, ls: 1.2 }));
+    c.push(txt(L, 37.5, 'CAPÍTULO'), campo(70, 37.8));
+    c.push(txt(75, 37.5, 'CENA'), campo(118, 37.8));
+    c.push(txt(123, 37.5, 'DATA'), campo(163, 37.8));
+
+    // relógio quase meia-noite
+    const cx = 183, cy = 24, r = 11;
+    let rel = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${T.tinta}" stroke-opacity="0.7" stroke-width="0.45"/>`;
+    rel += `<circle cx="${cx}" cy="${cy}" r="${r - 1}" fill="none" stroke="${T.tinta}" stroke-opacity="0.35" stroke-width="0.15"/>`;
+    for (let i = 0; i < 60; i++) {
+      const a = i * 6 * Math.PI / 180, grande = i % 5 === 0;
+      const r1 = r - 1.4, r2 = grande ? r - 3.2 : r - 2;
+      rel += `<line x1="${(cx + r1 * Math.sin(a)).toFixed(2)}" y1="${(cy - r1 * Math.cos(a)).toFixed(2)}" x2="${(cx + r2 * Math.sin(a)).toFixed(2)}" y2="${(cy - r2 * Math.cos(a)).toFixed(2)}" stroke="${T.tinta}" stroke-opacity="${grande ? 0.75 : 0.35}" stroke-width="${grande ? 0.35 : 0.15}"/>`;
+    }
+    const ponteiro = (graus, comp, w, cor, op = 0.85) => {
+      const a = graus * Math.PI / 180;
+      return `<line x1="${cx}" y1="${cy}" x2="${(cx + comp * Math.sin(a)).toFixed(2)}" y2="${(cy - comp * Math.cos(a)).toFixed(2)}" stroke="${cor}" stroke-opacity="${op}" stroke-width="${w}" stroke-linecap="round"/>`;
+    };
+    rel += ponteiro(358.9, 5.2, 0.7, T.tinta) + ponteiro(348, 7.6, 0.45, T.tinta) + ponteiro(300, 8.2, 0.2, T.destaque, 1);
+    rel += `<circle cx="${cx}" cy="${cy}" r="0.6" fill="${T.destaque}"/>`;
+    c.push(rel);
+
+    c.push(separador(42.6));
+    c.push(pautas(L, R, 52, 276));
+    for (let y = 52; y <= 276; y += 8) {
+      c.push(`<text x="20.5" y="${y - 1.5}" font-size="3.2" fill="${T.tintaSuave}" fill-opacity="0.7" text-anchor="middle">:</text>`);
+      c.push(linha(29, y - 3.2, 29, y, T.tintaSuave, 0.45, 0.15));
+    }
+    c.push(digital(176, 244, -18));
+
+    c.push(linha(L, 280, R, 280));
+    c.push(txt(L, 287.6, 'TEMPO RESTANTE', { size: 2.8 }));
+    for (let i = 0; i < 10; i++) c.push(caixa(49 + i * 4.3, 284.7, 3, 3, T.destaque));
+    c.push(pagina(287.6));
+    return { f, c };
+  },
+
+  // 4) Cena do crime (fitas de isolamento)
+  cena() {
+    const f = [], c = [];
+    c.push(txt(L, 15.5, 'ARQUIVO · CASO Nº', { size: 2.6 }), campo(76, 15.8));
+    c.push(txt(L, 27.5, 'CAPÍTULO', { size: 6.4, cor: T.tinta, ls: 1.2 }), campo(126, 27.8));
+    c.push(txt(L, 37.5, 'CENA'), campo(68, 37.8));
+    c.push(txt(73, 37.5, 'DATA'), campo(126, 37.8), barra(97, 37.3), barra(110, 37.3));
+    c.push(separador(42.6));
+    c.push(pautas(L, R, 52, 276));
+
+    c.push(linha(L, 280, R, 280));
+    c.push(tensao(96, 287.6), pagina(287.6));
+
+    c.push(fita(177, 19, 33.7, 120));
+    c.push(fita(174, 23, -22, 110));
+    c.push(fita(30, 278, 33.7, 120));
+    return { f, c };
+  }
+};
+
+// ---------- monta as páginas ----------
+const lista = qual === 'todos' ? Object.keys(modelos) : [qual];
+const box = document.getElementById('paginas');
+for (const nome of lista) {
+  const { f, c } = modelos[nome]();
+  const div = document.createElement('div');
+  div.className = 'folha';
+  div.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297"><rect width="210" height="297" fill="url(#vinheta)"/>${f.join('')}</svg>
+    <div class="grao" style="background-image:url(${grao});opacity:${T.grao}"></div>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 297">${c.join('\n')}</svg>`;
+  box.appendChild(div);
+}
+
+document.querySelectorAll('line[data-apos]').forEach(l => {
+  const bb = document.getElementById(l.dataset.apos).getBBox();
+  l.setAttribute('x1', (bb.x + bb.width + 1.8).toFixed(2));
+});
+window.pronto = true;
+})();
+</script>
+</body>
+</html>
